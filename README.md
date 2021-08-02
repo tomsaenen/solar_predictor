@@ -8,6 +8,9 @@ Just a small DIY project
 - Recalculate for local site capability
 - Create nice graph
 
+## Example
+See plot.png
+
 ## TODO
 - Read out actual performance (provided by SolarEdge)
 - Communicate predictions to PLC via OPC
