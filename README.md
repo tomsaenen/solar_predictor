@@ -8,12 +8,13 @@ Just a small DIY project
 - Recalculate for local site capability
 - Create nice graph
 
-## Example
-See plot.png
+![plot.png](./plot.png)
+
+## Install
+```
+git clone https://github.com/tomsaenen/solar_predictor.git
+```
 
 ## TODO
 - Read out actual performance (provided by SolarEdge)
 - Communicate predictions to PLC via OPC
-
-## Install
-git clone https://github.com/tomsaenen/solar_predictor.git
