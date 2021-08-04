@@ -1,4 +1,12 @@
-.DS_Store
+# Git
 .gitcommitmsg
+
+# Python
+__pycache__/
+
+# macOS
+.DS_Store
+
+# Project related
 solaredge_api.json
 *_MARKED.pdf
