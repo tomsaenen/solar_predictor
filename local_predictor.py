@@ -213,24 +213,6 @@ plt.xticks(ticks=list(plot_sun_times.values()), labels=plot_sun_times.keys())
 
 plt.gca().tick_params(axis='x', direction='in',pad=-28)
 
-#------------------------------------ Text ------------------------------------#
-
-# lines = []
-# lines.append('Local Capacity: %.2f kWp' % local_capacity)
-# lines.append('')
-# lines.append(r'$\bf{Elia\ Predictions}$')
-# lines.append('Total daily production: %.2f kWh' % total_kwh)
-# lines.append('Current power: %.2f kW' % current_power)
-# lines.append('Current production: %.2f kWh' % current_kwh)
-# lines.append('')
-# lines.append(r'$\bf{SolarEdge\ Actuals}$')
-# lines.append('Current power: ')
-# lines.append('Current production:')
-#
-# plt.text(0.03, 0.88, '\n'.join(lines), transform=plt.gcf().transFigure,
-#          horizontalalignment = 'left',
-#          verticalalignment = 'top')
-
 #----------------------------------- Table ------------------------------------#
 
 rows = []
