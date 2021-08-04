@@ -6,6 +6,7 @@ Just a small DIY project
 ## Features
 - Read out local solar predictions (provided by Elia for Belgium)
 - Recalculate for local site capacity
+- Read out actual performance (provided by SolarEdge)
 - Create nice graph
 
 ![plot.png](./plot.png)
@@ -22,7 +23,6 @@ To access the SolarEdge API an API key is required. This key is read from `solar
 ```json
 {
   "api_key": "KEY",
-  "installation_id": "ID"
 }
 ```
 This file is not included in the repository for privacy reasons.
@@ -38,6 +38,11 @@ Run for any day:
 python3 local_predictor.py YYYY-MM-DD
 ```
 
+You can test the communication with Solar Edge separately:
+```bash
+python3 solaredge.py
+```
+
 ## TODO
-- Read out actual performance (provided by SolarEdge)
+- Add SolarEdge data to graph
 - Communicate predictions to PLC via OPC
