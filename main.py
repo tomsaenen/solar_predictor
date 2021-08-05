@@ -2,20 +2,15 @@
 
 import sys
 import datetime
-from collections import defaultdict
 import warnings
 
-import requests
-import urllib3
-urllib3.disable_warnings()
-import xmltodict
 import pandas as pd
-import pytz
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 from scipy import integrate
 import scipy.interpolate
 import astral
+import pytz
 
 from color import BLUE
 
@@ -23,9 +18,7 @@ from color import BLUE
 
 local_capacity = 12.09 # [kWp]
 
-root = 'https://publications.elia.be/Publications/publications/solarforecasting.v4.svc/'
-region = '5'
-local_timezone = 'Europe/Brussels' # tz format
+local_timezone = 'Europe/Brussels' # pytz format
 
 latitude = 51.197567558420694
 longitude = 4.716483482278131
@@ -34,7 +27,7 @@ longitude = 4.716483482278131
 
 #------------------------------------ Date ------------------------------------#
 
-# Today unless other date specified via first argument
+# Today unless other date specified via first argument 'YYYY-MM-DD'
 if len(sys.argv) == 1:
     today = True
     datetime_from = datetime.date.today()
@@ -42,49 +35,27 @@ else:
     today = False
     datetime_from = datetime.datetime.strptime(sys.argv[1], '%Y-%m-%d')
 
+#--------------------------- Get Elia Forecast Data ---------------------------#
+
 datetime_to = datetime_from + datetime.timedelta(days=1)
 
+# Convert to strings
 date_from = datetime_from.strftime('%Y-%m-%d')
 date_to = datetime_to.strftime('%Y-%m-%d')
 
-#------------------------------- Get Chart Data -------------------------------#
+# Get Elia Data
+from elia import EliaConnector
+ec = EliaConnector()
+time, data = ec.get_chart_data(date_from, date_to, region=5, tz=local_timezone)
 
-method = 'GetChartDataForZoneXml'
-parameters = 'dateFrom=' + date_from + '&dateTo=' + date_to + '&sourceId=' + region
-url = root + method + '?' + parameters
-response = requests.get(url, verify=False)
+#----------------------- Recalculate to Local Capacity ------------------------#
 
-# XML to JSON
-json_data = xmltodict.parse(response.text)
+# Calculations
+for i in range(len(data['MostRecentForecast'])):
+    data['PredictedLoadFactor'].append(data['MostRecentForecast'][i] / data['MonitoredCapacity'][i] * 100) # [%]
+    data['LocalForecast'].append(data['PredictedLoadFactor'][i]/100 * local_capacity) # [kW]
 
-# Save data to lists (in one dict, key = column name)
-time = []
-data = defaultdict(list)
-
-for entry in json_data['SolarForecastingChartDataForZone']['SolarForecastingChartDataForZoneItems']['SolarForecastingChartDataForZoneItem']:
-    #print(entry)
-
-    # Get time as datetime
-    time_data = entry['StartsOn']['a:DateTime']
-    format = '%Y-%m-%dT%H:%M:%SZ'
-    time_datetime = datetime.datetime.strptime(time_data, format)
-
-    # Convert timezone
-    time_datetime_utc = pytz.utc.localize(time_datetime) # make datetime timezone aware
-    local_tz = pytz.timezone(local_timezone) # target timezone
-    time_datetime_bru = time_datetime_utc.astimezone(local_tz) # convert to timezone
-
-    time.append(time_datetime_bru)
-
-    data['MostRecentForecast'].append(float(entry['MostRecentForecast']))
-    #data['RealTime'].append(float(entry['RealTime']))
-    data['MonitoredCapacity'].append(float(entry['MonitoredCapacity']))
-
-    # Calculations
-    data['PredictedLoadFactor'].append(data['MostRecentForecast'][-1] / data['MonitoredCapacity'][-1] * 100) # [%]
-    data['LocalForecast'].append(data['PredictedLoadFactor'][-1]/100 * local_capacity) # [kW]
-
-# Create DataFrame
+# Print info
 df = pd.DataFrame(data, index=time)
 print('\n' + BLUE + 'Prediction Data')
 print(df[['PredictedLoadFactor','LocalForecast']].to_string())
@@ -95,6 +66,7 @@ if today == True:
     loc = astral.LocationInfo('Brussels', 'Belgium', local_timezone, latitude, longitude)
 
     from astral.sun import sun
+    local_tz = pytz.timezone(local_timezone) # target timezone
     sun_times = sun(loc.observer, date=datetime_from, tzinfo=local_tz)
 
     print('\n' + BLUE + 'Solar Info')

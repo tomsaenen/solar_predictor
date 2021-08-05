@@ -30,16 +30,17 @@ This file is not included in the repository for privacy reasons.
 ## Run
 Run for today:
 ```bash
-python3 local_predictor.py
+python3 main.py
 ```
 
 Run for any day:
 ```bash
-python3 local_predictor.py YYYY-MM-DD
+python3 main.py YYYY-MM-DD
 ```
 
-You can test the communication with Solar Edge separately:
+You can test communication with 3rd parties separately:
 ```bash
+python3 elia.py
 python3 solaredge.py
 ```
 
