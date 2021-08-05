@@ -1,9 +1,5 @@
 #! python3
 
-################################ SolarEdge API #################################
-#               Copyright (c) 2021 Tom Saenen <tomsaenen@me.com>               #
-################################################################################
-
 import json
 import datetime
 
@@ -13,254 +9,320 @@ urllib3.disable_warnings() # Ignore InsecureRequestWarning
 
 from color import RED, GREEN, YELLOW, BLUE
 
-verbose = True
-debug = True
 
-################################################################################
-
-root = 'https://monitoringapi.solaredge.com'
-
-# API Date Formats
-# ! Data's are always in the time zone of the site
-datetime_format = 'YYYY-MM-DD hh:mm:ss'
-date_format = 'YYYY-MM-DD'
-
-# Rename components
-rename_component = {}
-rename_component['GRID'] = 'grid'
-rename_component['LOAD'] = 'house'
-rename_component['PV'] = 'solar'
-rename_component['STORAGE'] = 'battery'
-
-################################################################################
-
-# Import API key
-with open('solaredge_api.json', 'r') as file:
-    credentials = json.load(file)
-
-################################################################################
-
-def get_rest(root, method, parameter=None, debug=False):
+class SolarEdgeConnector:
     '''
-    GET request to Solar Edge
-
-    Arguments
-    ---------
-    root      (string)
-    method    (string)
-    parameter (list)
-
-    debug
-
-    Returns
-    -------
-    json_data
+    Connect and make requests to Solar Edge API
     '''
-    # Build request url
-    if parameter == None:
-        url = root + method
-    else:
-        url = root + method + '?' + '&'.join(parameter)
+    def __init__(self, verbose=True, debug=False):
+        # API self.root
+        self.root = 'https://monitoringapi.solaredge.com'
 
-    if debug == True:
-        print(YELLOW + '[REQUEST] ' + url)
+        # Verbosity
+        self.verbose = verbose
+        self.debug = debug
 
-    response = requests.get(url, verify=False)
+        # API Date Formats
+        # ! Data's are always in the time zone of the site
+        self.datetime_format = 'YYYY-MM-DD hh:mm:ss'
+        self.date_format = 'YYYY-MM-DD'
 
-    # Check HTTP Status Code
-    if response.status_code == 200:
-        json_data = response.json()
+        # Rename components
+        self.rename_component = {}
+        self.rename_component['GRID'] = 'grid'
+        self.rename_component['LOAD'] = 'house'
+        self.rename_component['PV'] = 'solar'
+        self.rename_component['STORAGE'] = 'battery'
+
+        # Import API key
+        with open('solaredge_api.json', 'r') as file:
+            self.credentials = json.load(file)
+
+
+    def _get_request(self, root, method, parameter=None, debug=False):
+        '''
+        GET request to Solar Edge REST API
+
+        Arguments
+        ---------
+        root      (string)
+        method    (string)
+        parameter (list)
+
+        debug
+
+        Returns
+        -------
+        json_data
+        '''
+        # Build request url
+        if parameter == None:
+            url = root + method
+        else:
+            url = root + method + '?' + '&'.join(parameter)
 
         if debug == True:
-                print(GREEN + '200 - OK')
-                print(YELLOW + json.dumps(json_data, sort_keys=True, indent=4))
+            print(YELLOW + '[REQUEST] ' + url)
 
-        return json_data
+        response = requests.get(url, verify=False)
 
-    elif response.status_code == 400:
-        raise Exception(RED + '401 - Bad Request')
+        # Check HTTP Status Code
+        if response.status_code == 200:
+            json_data = response.json()
 
-    elif response.status_code == 401:
-        raise Exception(RED + '401 - Authentication Required')
+            if debug == True:
+                    print(GREEN + '200 - OK')
+                    print(YELLOW + json.dumps(json_data, sort_keys=True, indent=4))
 
-    elif response.status_code == 404:
-        raise Exception(RED + '404 - Not Found')
+            return json_data
 
-    else:
-        raise Exception(RED + 'Unprocessed HTTP Response: %d' % response.status_code)
+        elif response.status_code == 400:
+            raise Exception(RED + '401 - Bad Request')
 
-################################## Sites API ###################################
+        elif response.status_code == 401:
+            raise Exception(RED + '401 - Authentication Required')
 
-#--------------------------------- Site List ----------------------------------#
+        elif response.status_code == 404:
+            raise Exception(RED + '404 - Not Found')
 
-print(BLUE + 'Site List')
+        else:
+            raise Exception(RED + 'Unprocessed HTTP Response: %d' % response.status_code)
 
-# Build request
-method = '/sites/list'
-parameter = []
-parameter.append('api_key=' + credentials['api_key'])
+    ################################ Sites API #################################
 
-json_data = get_rest(root, method, parameter)
+    def get_sites_list(self):
+        '''
+        Sites List
+        '''
+        # Build request
+        method = '/sites/list'
+        parameter = []
+        parameter.append('api_key=' + self.credentials['api_key'])
 
-# Print sites info
-nr_of_sites = json_data['sites']['count']
-print('Number of sites: ' + str(nr_of_sites))
+        # Do request
+        json_data = self._get_request(self.root, method, parameter)
 
-sites = json_data['sites']['site']
-for i, site in enumerate(sites):
-    print('\n' + 'Site %d' % (i+1))
-    print('  ' + 'Name: ' + str(site['name']))
-    print('  ' + 'ID: ' + str(site['id']))
-    print('  ' + 'Peak Power: %.2f kWp' % site['peakPower'])
-    print('  ' + 'Status: %s' % site['status'])
-    #print('\t' + 'Last updated: %s' % site['lastUpdateTime']) # ! Via 'Site Overview' you get Time info as well (this is just Date)
+        # Extract data
+        self.nr_of_sites = json_data['sites']['count']
+        self.sites = json_data['sites']['site']
 
-#-------------------------------- Site Details --------------------------------#
+        # Print info
+        if self.verbose:
+            print(BLUE + 'Site List')
+            print('Number of sites: ' + str(self.nr_of_sites))
+            for i, site in enumerate(self.sites):
+                print('\n' + 'Site %d' % (i+1))
+                print('  ' + 'Name: ' + str(site['name']))
+                print('  ' + 'ID: ' + str(site['id']))
+                print('  ' + 'Peak Power: %.2f kWp' % site['peakPower'])
+                print('  ' + 'Status: %s' % site['status'])
+                #print('\t' + 'Last updated: %s' % site['lastUpdateTime']) # ! Via 'Site Overview' you get Time info as well (this is just Date)
 
-# ! Provides no extra info compared to site list (checked via debug=True)
 
-# method = '/site/%s/details' % sites[0]['id'] # /site/SITE_ID/details
-# parameter = []
-# parameter.append('api_key=' + credentials['api_key'])
-#
-# json_data = get_rest(root, method, parameter, debug=False)
+    def get_site_details(self, site_id):
+        '''
+        Site Details
 
-#-------------------------------- Site Energy ---------------------------------#
+        ! Provides no extra info compared to site list (checked via debug=True)
 
-# Site energy measurements (Wh)
-# > can be used to get production for multiple days at a time
-# > can also be used to get current production for today, but this makes more sense through 'Site Overview'
+        Argument
+        --------
+        site_id (int)
+        '''
+        # Build request
+        method = '/site/%s/details' % self.sites[site_id]['id'] # /site/SITE_ID/details
+        parameter = []
+        parameter.append('api_key=' + self.credentials['api_key'])
 
-# method = '/site/%s/energy' % sites[0]['id'] # /site/SITE_ID/energy
-# parameter = []
-# parameter.append('startDate=2021-08-04') # mandatory
-# parameter.append('endDate=2021-08-04') # mandatory
-# #parameter.append('timeUnit=HOUR') # QUARTER_OF_AN_HOUR, HOUR, DAY (default), WEEK, MONTH, YEAR
-# parameter.append('api_key=' + credentials['api_key'])
-#
-# json_data = get_rest(root, method, parameter, debug=False)
-#
-# # Extract data
-# current_production = json_data['energy']['values'][0]['value'] # Wh
-#
-# # Print info
-# print('Current power: %.2f kWh' % (current_production/1000))
+        # Do request
+        json_data = self._get_request(self.root, method, parameter, debug=False)
 
-#--------------------------------- Site Power ---------------------------------#
 
-# Site power measurements
-# - in 15 minutes resolution (QUARTER_OF_AN_HOUR fixed)
-# - limited to one-month period
-print('\n' + BLUE + 'Site Power Today')
+    def get_site_energy(self, site_id):
+        '''
+        Site Energy
 
-# Build request
-method = '/site/%s/power' % sites[0]['id'] # /site/SITE_ID/power
-parameter = []
-parameter.append('startTime=2021-08-04%2000:00:00') # mandatory
-parameter.append('endTime=2021-08-04%2023:59:59') # mandatory
-parameter.append('api_key=' + credentials['api_key'])
+        Site energy measurements (Wh)
+        > can be used to get production for multiple days at a time
+        > can also be used to get current production for today, but this makes more sense through 'Site Overview'
 
-json_data = get_rest(root, method, parameter, debug=False)
+        Argument
+        --------
+        site_id (int)
+        '''
+        # Build request
+        method = '/site/%s/energy' % self.sites[site_id]['id'] # /site/SITE_ID/energy
+        parameter = []
+        parameter.append('startDate=2021-08-04') # mandatory
+        parameter.append('endDate=2021-08-04') # mandatory
+        #parameter.append('timeUnit=HOUR') # QUARTER_OF_AN_HOUR, HOUR, DAY (default), WEEK, MONTH, YEAR
+        parameter.append('api_key=' + self.credentials['api_key'])
 
-# Extract data
-power = {}
-for entry in json_data['power']['values']:
-    dt = datetime.datetime.strptime(entry['date'], '%Y-%m-%d %H:%M:%S')
-    power[dt] = entry['value'] # W
+        # Do request
+        json_data = self._get_request(self.root, method, parameter, debug=False)
 
-if debug == True:
-    for key in power:
-        print(str(key) + ': ' + str(power[key]))
+        # Extract data
+        current_production = json_data['energy']['values'][0]['value'] # Wh
 
-#------------------------------- Site Overview --------------------------------#
+        # Print info
+        if self.verbose:
+             print('Current power: %.2f kWh' % (current_production/1000))
 
-# Site overview data
-print('\n' + BLUE + 'Current values')
 
-# Build request
-method = '/site/%s/overview' % sites[0]['id'] # /site/SITE_ID/overview
-parameter = []
-parameter.append('api_key=' + credentials['api_key'])
+    def get_site_power(self, site_id):
+        '''
+        Site Power
 
-# Do request
-json_data = get_rest(root, method, parameter, debug=False)
+        Site power measurements
+        - in 15 minutes resolution (QUARTER_OF_AN_HOUR fixed)
+        - limited to one-month period
 
-# Extract data
-current_power = json_data['overview']['currentPower']['power'] # W
-current_production = json_data['overview']['lastDayData']['energy'] # Wh
-last_update = json_data['overview']['lastUpdateTime']
+        Argument
+        --------
+        site_id (int)
+        '''
+        # Build request
+        method = '/site/%s/power' % self.sites[site_id]['id'] # /site/SITE_ID/power
+        parameter = []
+        parameter.append('startTime=2021-08-04%2000:00:00') # mandatory
+        parameter.append('endTime=2021-08-04%2023:59:59') # mandatory
+        parameter.append('api_key=' + self.credentials['api_key'])
 
-# Print info
-print('Current power: %.2f kW' % (current_power/1000))
-print('Current production: %.2f kWh' % (current_production/1000))
-print('Last update: %s' % last_update)
+        # Do request
+        json_data = self._get_request(self.root, method, parameter, debug=False)
 
-#------------------------------ Site Power Flow -------------------------------#
+        # Extract data
+        power = {}
+        for entry in json_data['power']['values']:
+            dt = datetime.datetime.strptime(entry['date'], '%Y-%m-%d %H:%M:%S')
+            power[dt] = entry['value'] # W
 
-# Current power flow (PV array, battery, consumption, grid)
-print('\n' + BLUE + 'Power Flow')
+        # Print info
+        if self.verbose:
+            print('\n' + BLUE + 'Site Power Today')
+            for key in power:
+                print(str(key) + ': ' + str(power[key]))
 
-# Build request
-method = '/site/%s/currentPowerFlow' % sites[0]['id'] # /site/SITE_ID/overview
-parameter = []
-parameter.append('api_key=' + credentials['api_key'])
 
-# Do request
-json_data = get_rest(root, method, parameter, debug=False)
+    def get_site_overview(self, site_id):
+        '''
+        Site Overview
 
-# Extract data
-component_power = {}
-for key in rename_component.keys():
-    component_power[rename_component[key]] = json_data['siteCurrentPowerFlow'][key]['currentPower']
+        Argument
+        --------
+        site_id (int)
+        '''
+        # Build request
+        method = '/site/%s/overview' % self.sites[site_id]['id'] # /site/SITE_ID/overview
+        parameter = []
+        parameter.append('api_key=' + self.credentials['api_key'])
 
-component_status = {}
-for key in rename_component.keys():
-    component_status[rename_component[key]] = json_data['siteCurrentPowerFlow'][key]['status']
+        # Do request
+        json_data = self._get_request(self.root, method, parameter, debug=False)
 
-connections = json_data['siteCurrentPowerFlow']['connections']
-for connection in connections:
-    for key in connection:
-        connection[key] = rename_component[connection[key].upper()]
+        # Extract data
+        current_power = json_data['overview']['currentPower']['power'] # W
+        current_production = json_data['overview']['lastDayData']['energy'] # Wh
+        last_update = json_data['overview']['lastUpdateTime']
 
-battery_level = json_data['siteCurrentPowerFlow']['STORAGE']['chargeLevel'] # %
+        # Print info
+        if self.verbose:
+            print('\n' + BLUE + 'Current values')
+            print('Current power: %.2f kW' % (current_power/1000))
+            print('Current production: %.2f kWh' % (current_production/1000))
+            print('Last update: %s' % last_update)
 
-# Print info
-for name, power in component_power.items():
-    print('%s %s %.2f kW' % (name.title().ljust(9), component_status[name].ljust(8), power))
 
-print('\n' + 'Connections:')
-for connection in connections:
-    print('\t' + '%s --> %s' % (connection['from'].title(), connection['to'].title()))
+    def get_site_power_flow(self, site_id):
+        '''
+        Site Power Flow
 
-print('\n' + 'Battery level: %d%%' % battery_level)
+        Current power flow (PV array, battery, consumption, grid)
 
-#---------------------------- Storage Information -----------------------------#
+        Argument
+        --------
+        site_id (int)
+        '''
+        # Build request
+        method = '/site/%s/currentPowerFlow' % self.sites[site_id]['id'] # /site/SITE_ID/overview
+        parameter = []
+        parameter.append('api_key=' + self.credentials['api_key'])
 
-# Detailed information from batteries (state of energy, power, lifetime energy)
-# - limited to one-week period
-# - in 5 minutes resolution
-# > used to get battery history
-print('\n' + BLUE + 'Battery Information')
+        # Do request
+        json_data = self._get_request(self.root, method, parameter, debug=False)
 
-# Build request
-method = '/site/%s/storageData' % sites[0]['id'] # /site/SITE_ID/storageData
-parameter = []
-parameter.append('startTime=2021-08-04%2000:00:00') # mandatory
-parameter.append('endTime=2021-08-04%2003:59:59') # mandatory
-parameter.append('api_key=' + credentials['api_key'])
+        # Extract data
+        component_power = {}
+        for key in self.rename_component.keys():
+            component_power[self.rename_component[key]] = json_data['siteCurrentPowerFlow'][key]['currentPower']
 
-# Do request
-json_data = get_rest(root, method, parameter, debug=False)
+        component_status = {}
+        for key in self.rename_component.keys():
+            component_status[self.rename_component[key]] = json_data['siteCurrentPowerFlow'][key]['status']
 
-# Extract data
-nr_of_batteries = json_data['storageData']['batteryCount']
-batteries = json_data['storageData']['batteries']
+        connections = json_data['siteCurrentPowerFlow']['connections']
+        for connection in connections:
+            for key in connection:
+                connection[key] = self.rename_component[connection[key].upper()]
 
-# Print info
-print('Number of batteries: %d' % nr_of_batteries)
+        battery_level = json_data['siteCurrentPowerFlow']['STORAGE']['chargeLevel'] # %
 
-for i, battery in enumerate(batteries):
-    print('\n' + 'Battery %d' % (i+1))
-    print('  ' + 'Model: %s' % battery['modelNumber'])
-    print('  ' + 'Serial Number: %s' % battery['serialNumber'])
-    print('  ' + 'Capacity: %s Wh' % battery['nameplate'])
+        # Print info
+        if self.verbose:
+            print('\n' + BLUE + 'Power Flow')
+
+            for name, power in component_power.items():
+                print('%s %s %.2f kW' % (name.title().ljust(9), component_status[name].ljust(8), power))
+
+            print('\n' + 'Connections:')
+            for connection in connections:
+                print('\t' + '%s --> %s' % (connection['from'].title(), connection['to'].title()))
+
+            print('\n' + 'Battery level: %d%%' % battery_level)
+
+
+    def get_storage_information(self, site_id):
+        '''
+        Storage Information
+
+        Detailed information from batteries (state of energy, power, lifetime energy)
+        - limited to one-week period
+        - in 5 minutes resolution
+        > used to get battery history
+
+        Argument
+        --------
+        site_id (int)
+        '''
+        # Build request
+        method = '/site/%s/storageData' % self.sites[site_id]['id'] # /site/SITE_ID/storageData
+        parameter = []
+        parameter.append('startTime=2021-08-04%2000:00:00') # mandatory
+        parameter.append('endTime=2021-08-04%2003:59:59') # mandatory
+        parameter.append('api_key=' + self.credentials['api_key'])
+
+        # Do request
+        json_data = self._get_request(self.root, method, parameter, debug=False)
+
+        # Extract data
+        nr_of_batteries = json_data['storageData']['batteryCount']
+        batteries = json_data['storageData']['batteries']
+
+        # Print info
+        if self.verbose:
+            print('\n' + BLUE + 'Battery Information')
+            print('Number of batteries: %d' % nr_of_batteries)
+            for i, battery in enumerate(batteries):
+                print('\n' + 'Battery %d' % (i+1))
+                print('  ' + 'Model: %s' % battery['modelNumber'])
+                print('  ' + 'Serial Number: %s' % battery['serialNumber'])
+                print('  ' + 'Capacity: %s Wh' % battery['nameplate'])
+
+
+if __name__ == '__main__':
+    sec = SolarEdgeConnector()
+    sec.get_sites_list()
+    sec.get_site_power(0)
+    sec.get_site_overview(0)
+    sec.get_site_power_flow(0)
+    sec.get_storage_information(0)
