@@ -6,6 +6,7 @@ import datetime
 import requests
 import urllib3
 urllib3.disable_warnings() # Ignore InsecureRequestWarning
+import pytz
 
 from color import RED, GREEN, YELLOW, BLUE
 
@@ -139,6 +140,10 @@ class SolarEdgeConnector:
         --------
         site_id (int)
         '''
+        # Progress print
+        if self.verbose:
+            print('Getting site details... ', end='')
+
         # Build request
         method = '/site/%s/details' % self.sites[site_id]['id'] # /site/SITE_ID/details
         parameter = []
@@ -146,6 +151,10 @@ class SolarEdgeConnector:
 
         # Do request
         json_data = self._get_request(self.root, method, parameter, debug=False)
+
+        # Progress print
+        if self.verbose:
+            print(GREEN + 'Done')
 
 
     def get_site_energy(self, site_id):
@@ -160,6 +169,10 @@ class SolarEdgeConnector:
         --------
         site_id (int)
         '''
+        # Progress print
+        if self.verbose:
+            print('Getting site energy... ', end='')
+
         # Build request
         method = '/site/%s/energy' % self.sites[site_id]['id'] # /site/SITE_ID/energy
         parameter = []
@@ -178,6 +191,10 @@ class SolarEdgeConnector:
         if self.info:
              print('\n' + 'Current power: %.2f kWh' % (current_production/1000))
 
+        # Progress print
+        if self.verbose:
+            print(GREEN + 'Done')
+
 
     def get_site_power(self, site_id, start_time, end_time):
         '''
@@ -195,7 +212,7 @@ class SolarEdgeConnector:
 
         Returns
         -------
-        power   (dict)  :   {datetime : power (float) [W]}
+        power   (dict)  :   {datetime : power (float) [kW]}
         '''
         # Progress print
         if self.verbose:
@@ -214,8 +231,12 @@ class SolarEdgeConnector:
         # Extract data
         power = {}
         for entry in json_data['power']['values']:
-            dt = datetime.datetime.strptime(entry['date'], '%Y-%m-%d %H:%M:%S')
-            power[dt] = entry['value'] # W
+            unaware_dt = datetime.datetime.strptime(entry['date'], '%Y-%m-%d %H:%M:%S')
+            dt = pytz.timezone('Europe/Brussels').localize(unaware_dt) # timezone aware datetime
+            if entry['value'] == None:
+                power[dt] = entry['value']
+            else:
+                power[dt] = entry['value'] / 1000 # kW
 
         # Print info
         if self.info:
@@ -238,7 +259,17 @@ class SolarEdgeConnector:
         Argument
         --------
         site_id (int)
+
+        Returns
+        -------
+        last_update (datetime)
+        current_power (float) [W]
+        current_production (float) [Wh]
         '''
+        # Progress print
+        if self.verbose:
+            print('Getting site overview... ', end='')
+
         # Build request
         method = '/site/%s/overview' % self.sites[site_id]['id'] # /site/SITE_ID/overview
         parameter = []
@@ -250,14 +281,25 @@ class SolarEdgeConnector:
         # Extract data
         current_power = json_data['overview']['currentPower']['power'] # W
         current_production = json_data['overview']['lastDayData']['energy'] # Wh
-        last_update = json_data['overview']['lastUpdateTime']
+        last_update_string = json_data['overview']['lastUpdateTime']
+
+        format = '%Y-%m-%d %H:%M:%S'
+        unaware_last_update = datetime.datetime.strptime(last_update_string, format)
+        last_update = pytz.timezone('Europe/Brussels').localize(unaware_last_update) # timezone aware datetime
 
         # Print info
         if self.info:
             print('\n' + BLUE + 'Current values')
             print('Current power: %.2f kW' % (current_power/1000))
             print('Current production: %.2f kWh' % (current_production/1000))
-            print('Last update: %s' % last_update)
+            print('Last update: %s' % last_update_string)
+
+        # Progress print
+        if self.verbose:
+            print(GREEN + 'Done')
+
+        # Return result
+        return last_update, current_power, current_production
 
 
     def get_site_power_flow(self, site_id):
@@ -270,6 +312,10 @@ class SolarEdgeConnector:
         --------
         site_id (int)
         '''
+        # Progress print
+        if self.verbose:
+            print('Getting site power flow... ', end='')
+
         # Build request
         method = '/site/%s/currentPowerFlow' % self.sites[site_id]['id'] # /site/SITE_ID/overview
         parameter = []
@@ -307,6 +353,10 @@ class SolarEdgeConnector:
 
             print('\n' + 'Battery level: %d%%' % battery_level)
 
+        # Progress print
+        if self.verbose:
+            print(GREEN + 'Done')
+
 
     def get_storage_information(self, site_id):
         '''
@@ -321,6 +371,10 @@ class SolarEdgeConnector:
         --------
         site_id (int)
         '''
+        # Progress print
+        if self.verbose:
+            print('Getting storage information... ', end='')
+
         # Build request
         method = '/site/%s/storageData' % self.sites[site_id]['id'] # /site/SITE_ID/storageData
         parameter = []
@@ -344,6 +398,10 @@ class SolarEdgeConnector:
                 print('  ' + 'Model: %s' % battery['modelNumber'])
                 print('  ' + 'Serial Number: %s' % battery['serialNumber'])
                 print('  ' + 'Capacity: %s Wh' % battery['nameplate'])
+
+        # Progress print
+        if self.verbose:
+            print(GREEN + 'Done')
 
 
 if __name__ == '__main__':

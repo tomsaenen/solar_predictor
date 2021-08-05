@@ -43,7 +43,7 @@ class EliaConnector:
         '''
         # Progress print
         if self.verbose:
-            print('Getting Elia data... ', end='')
+            print('Getting prediction data... ', end='')
 
         # Build request
         method = 'GetChartDataForZoneXml'

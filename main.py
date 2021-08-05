@@ -106,6 +106,9 @@ end_time = datetime_from.strftime('%Y-%m-%d 23:59:59')
 
 actual_power = sec.get_site_power(0, start_time, end_time)
 
+last_update, current_power, current_production = sec.get_site_overview(0)
+
+
 ################################### Sun Info ###################################
 
 if today == True:
@@ -124,5 +127,6 @@ if today == True:
 ##################################### Plot #####################################
 
 plot = SolarPlot()
-plot.plot(time, data['LocalForecast'], actual_power.values(), local_tz,
-          current_predicted_power, sun_times, local_capacity, total_kwh, current_kwh)
+plot.plot(time, data['LocalForecast'], list(actual_power.keys()), list(actual_power.values()), local_tz,
+          current_predicted_power, sun_times, local_capacity, total_kwh, current_kwh,
+          current_power/1000, current_production/1000, last_update)
