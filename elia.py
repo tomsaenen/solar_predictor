@@ -10,18 +10,20 @@ import xmltodict
 import pytz
 import pandas as pd
 
-from color import BLUE
+from color import GREEN, BLUE
+
 
 class EliaConnector:
     '''
     Connect and make requests to Elia API
     '''
-    def __init__(self, verbose=True, debug=False):
+    def __init__(self, verbose=True, info=False, debug=False):
         # API self.root
         self.root = 'https://publications.elia.be/Publications/publications/solarforecasting.v4.svc/'
 
         # Verbosity
         self.verbose = verbose
+        self.info = info
         self.debug = debug
 
 
@@ -39,6 +41,10 @@ class EliaConnector:
         time    (list)      : time as list of timedata (timezone aware)
         data    (dict)
         '''
+        # Progress print
+        if self.verbose:
+            print('Getting Elia data... ', end='')
+
         # Build request
         method = 'GetChartDataForZoneXml'
         parameters = 'dateFrom=' + date_from + '&dateTo=' + date_to + '&sourceId=' + str(region)
@@ -72,15 +78,19 @@ class EliaConnector:
             data['MonitoredCapacity'].append(float(entry['MonitoredCapacity']))
 
         # Print info
-        if self.verbose:
+        if self.info:
             df = pd.DataFrame(data, index=time)
             print('\n' + BLUE + 'Elia Data')
             print(df.to_string())
+
+        # Progress print
+        if self.verbose:
+            print(GREEN + 'Done')
 
         # Return results
         return time, data
 
 
 if __name__ == '__main__':
-    ec = EliaConnector()
+    ec = EliaConnector(info=True)
     ec.get_chart_data('2021-08-03', '2021-08-04', region=5, tz='Europe/Brussels')

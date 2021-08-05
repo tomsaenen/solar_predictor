@@ -14,12 +14,13 @@ class SolarEdgeConnector:
     '''
     Connect and make requests to Solar Edge API
     '''
-    def __init__(self, verbose=True, debug=False):
+    def __init__(self, verbose=True, info=False, debug=False):
         # API self.root
         self.root = 'https://monitoringapi.solaredge.com'
 
         # Verbosity
         self.verbose = verbose
+        self.info = info
         self.debug = debug
 
         # API Date Formats
@@ -64,6 +65,7 @@ class SolarEdgeConnector:
         if debug == True:
             print(YELLOW + '[REQUEST] ' + url)
 
+        # Do request
         response = requests.get(url, verify=False)
 
         # Check HTTP Status Code
@@ -94,6 +96,10 @@ class SolarEdgeConnector:
         '''
         Sites List
         '''
+        # Progress print
+        if self.verbose:
+            print('Getting sites list... ', end='')
+
         # Build request
         method = '/sites/list'
         parameter = []
@@ -107,8 +113,8 @@ class SolarEdgeConnector:
         self.sites = json_data['sites']['site']
 
         # Print info
-        if self.verbose:
-            print(BLUE + 'Site List')
+        if self.info:
+            print('\n' + BLUE + 'Site List')
             print('Number of sites: ' + str(self.nr_of_sites))
             for i, site in enumerate(self.sites):
                 print('\n' + 'Site %d' % (i+1))
@@ -117,6 +123,10 @@ class SolarEdgeConnector:
                 print('  ' + 'Peak Power: %.2f kWp' % site['peakPower'])
                 print('  ' + 'Status: %s' % site['status'])
                 #print('\t' + 'Last updated: %s' % site['lastUpdateTime']) # ! Via 'Site Overview' you get Time info as well (this is just Date)
+
+        # Progress print
+        if self.verbose:
+            print(GREEN + 'Done')
 
 
     def get_site_details(self, site_id):
@@ -165,11 +175,11 @@ class SolarEdgeConnector:
         current_production = json_data['energy']['values'][0]['value'] # Wh
 
         # Print info
-        if self.verbose:
-             print('Current power: %.2f kWh' % (current_production/1000))
+        if self.info:
+             print('\n' + 'Current power: %.2f kWh' % (current_production/1000))
 
 
-    def get_site_power(self, site_id):
+    def get_site_power(self, site_id, start_time, end_time):
         '''
         Site Power
 
@@ -177,15 +187,25 @@ class SolarEdgeConnector:
         - in 15 minutes resolution (QUARTER_OF_AN_HOUR fixed)
         - limited to one-month period
 
-        Argument
-        --------
-        site_id (int)
+        Arguments
+        ---------
+        site_id     (int)
+        start_time  (string)    :   YYYY-MM-DD hh:mm:ss
+        end_time    (string)    :   YYYY-MM-DD hh:mm:ss
+
+        Returns
+        -------
+        power   (dict)  :   {datetime : power (float) [W]}
         '''
+        # Progress print
+        if self.verbose:
+            print('Getting site power measurements... ', end='')
+
         # Build request
         method = '/site/%s/power' % self.sites[site_id]['id'] # /site/SITE_ID/power
         parameter = []
-        parameter.append('startTime=2021-08-04%2000:00:00') # mandatory
-        parameter.append('endTime=2021-08-04%2023:59:59') # mandatory
+        parameter.append('startTime=%s' % start_time.replace(' ','%20')) # mandatory
+        parameter.append('endTime=%s' % end_time.replace(' ','%20')) # mandatory
         parameter.append('api_key=' + self.credentials['api_key'])
 
         # Do request
@@ -198,10 +218,17 @@ class SolarEdgeConnector:
             power[dt] = entry['value'] # W
 
         # Print info
-        if self.verbose:
-            print('\n' + BLUE + 'Site Power Today')
+        if self.info:
+            print('\n' + BLUE + 'Site Power Measurements')
             for key in power:
                 print(str(key) + ': ' + str(power[key]))
+
+        # Progress print
+        if self.verbose:
+            print(GREEN + 'Done')
+
+        # Return data
+        return power
 
 
     def get_site_overview(self, site_id):
@@ -226,7 +253,7 @@ class SolarEdgeConnector:
         last_update = json_data['overview']['lastUpdateTime']
 
         # Print info
-        if self.verbose:
+        if self.info:
             print('\n' + BLUE + 'Current values')
             print('Current power: %.2f kW' % (current_power/1000))
             print('Current production: %.2f kWh' % (current_production/1000))
@@ -268,7 +295,7 @@ class SolarEdgeConnector:
         battery_level = json_data['siteCurrentPowerFlow']['STORAGE']['chargeLevel'] # %
 
         # Print info
-        if self.verbose:
+        if self.info:
             print('\n' + BLUE + 'Power Flow')
 
             for name, power in component_power.items():
@@ -309,7 +336,7 @@ class SolarEdgeConnector:
         batteries = json_data['storageData']['batteries']
 
         # Print info
-        if self.verbose:
+        if self.info:
             print('\n' + BLUE + 'Battery Information')
             print('Number of batteries: %d' % nr_of_batteries)
             for i, battery in enumerate(batteries):
@@ -320,9 +347,9 @@ class SolarEdgeConnector:
 
 
 if __name__ == '__main__':
-    sec = SolarEdgeConnector()
+    sec = SolarEdgeConnector(info=True)
     sec.get_sites_list()
-    sec.get_site_power(0)
+    sec.get_site_power(0, '2021-08-04 00:00:00', '2021-08-04 23:59:59')
     sec.get_site_overview(0)
     sec.get_site_power_flow(0)
     sec.get_storage_information(0)
