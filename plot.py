@@ -42,13 +42,9 @@ class SolarPlot:
         if self.verbose:
             print('Plotting... ', end='')
 
-        # Add last values (TODO)
+        # Add last values
         time_actual.append(actual_last_updated)
         actual.append(current_actual_power)
-
-        for i, j in zip(time_actual,actual):
-            print(i, end='\t')
-            print(j)
 
         #plt.style.use('dark_background')
 

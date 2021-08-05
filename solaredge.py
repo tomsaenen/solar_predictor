@@ -204,6 +204,8 @@ class SolarEdgeConnector:
         - in 15 minutes resolution (QUARTER_OF_AN_HOUR fixed)
         - limited to one-month period
 
+        ! = inverter measurements (solar + battery to house)
+
         Arguments
         ---------
         site_id     (int)
@@ -233,9 +235,7 @@ class SolarEdgeConnector:
         for entry in json_data['power']['values']:
             unaware_dt = datetime.datetime.strptime(entry['date'], '%Y-%m-%d %H:%M:%S')
             dt = pytz.timezone('Europe/Brussels').localize(unaware_dt) # timezone aware datetime
-            if entry['value'] == None:
-                power[dt] = entry['value']
-            else:
+            if entry['value'] != None:
                 power[dt] = entry['value'] / 1000 # kW
 
         # Print info
@@ -258,13 +258,13 @@ class SolarEdgeConnector:
 
         Argument
         --------
-        site_id (int)
+        site_id     (int)
 
         Returns
         -------
-        last_update (datetime)
-        current_power (float) [W]
-        current_production (float) [Wh]
+        last_update         (datetime)  :
+        current_power       (float)     : [W]
+        current_production  (float)     : [Wh]
         '''
         # Progress print
         if self.verbose:
@@ -345,7 +345,7 @@ class SolarEdgeConnector:
             print('\n' + BLUE + 'Power Flow')
 
             for name, power in component_power.items():
-                print('%s %s %.2f kW' % (name.title().ljust(9), component_status[name].ljust(8), power))
+                print('%s %s %.2f kW' % (name.title().ljust(9), component_status[name].ljust(13), power))
 
             print('\n' + 'Connections:')
             for connection in connections:
@@ -405,7 +405,7 @@ class SolarEdgeConnector:
 
 
 if __name__ == '__main__':
-    sec = SolarEdgeConnector(info=True)
+    sec = SolarEdgeConnector(verbose=False, info=True)
     sec.get_sites_list()
     sec.get_site_power(0, '2021-08-04 00:00:00', '2021-08-04 23:59:59')
     sec.get_site_overview(0)

@@ -45,5 +45,4 @@ python3 solaredge.py
 ```
 
 ## TODO
-- Add SolarEdge data to graph
 - Communicate predictions to PLC via OPC
