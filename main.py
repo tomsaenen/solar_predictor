@@ -10,7 +10,7 @@ from scipy import integrate
 import scipy.interpolate
 import astral
 
-from color import BLUE
+from color import BLUE, RED
 from elia import EliaConnector
 from solaredge import SolarEdgeConnector
 from plot import SolarPlot
@@ -28,9 +28,13 @@ longitude = 4.716483482278131
 if len(sys.argv) == 1:
     today = True
     datetime_from = datetime.date.today()
-else:
+elif len(sys.argv) == 2:
     today = False
     datetime_from = datetime.datetime.strptime(sys.argv[1], '%Y-%m-%d')
+else: # len(sys.argv) > 2
+    raise Exception(RED + 'Too many arguments')
+
+local_tz = pytz.timezone(local_timezone) # target timezone
 
 ########################### Get SolarEdge Peak Power ###########################
 
@@ -73,10 +77,10 @@ for i in time:
 total_kj = integrate.simpson(data['LocalForecast'], time_elapsed_s)
 
 # To kWh
-total_kwh = total_kj/3600
+total_predicted_kwh = total_kj/3600
 
 print('\n' + BLUE + 'Predictions')
-print('Total daily production: %.2f kWh' % total_kwh)
+print('Total daily production: %.2f kWh' % total_predicted_kwh)
 
 #----------------------------- Current production -----------------------------#
 
@@ -85,7 +89,6 @@ if today == True:
     f = scipy.interpolate.interp1d(time_elapsed_s, data['LocalForecast'], kind='linear')
 
     # Now (current power)
-    local_tz = pytz.timezone(local_timezone) # target timezone
     datetime_now = datetime.datetime.now(tz=local_tz)
     time_now_s = (datetime_now - time[0]).total_seconds() # seconds since start of day
 
@@ -96,8 +99,8 @@ if today == True:
     with warnings.catch_warnings():
         warnings.simplefilter('ignore')
         current_kj, _ = integrate.quad(f, time_elapsed_s[0], time_now_s)
-    current_kwh = current_kj/3600
-    print('Current production: %.2f kWh' % current_kwh)
+    current_predicted_kwh = current_kj/3600
+    print('Current production: %.2f kWh' % current_predicted_kwh)
 
 ############################ Get SolarEdge Actuals #############################
 
@@ -111,22 +114,25 @@ last_update, current_power, current_production = sec.get_site_overview(0)
 
 ################################### Sun Info ###################################
 
-if today == True:
-    loc = astral.LocationInfo('Brussels', 'Belgium', local_timezone, latitude, longitude)
+loc = astral.LocationInfo('Brussels', 'Belgium', local_timezone, latitude, longitude)
 
-    from astral.sun import sun
-    sun_times = sun(loc.observer, date=datetime_from, tzinfo=local_tz)
+from astral.sun import sun
+sun_times = sun(loc.observer, date=datetime_from, tzinfo=local_tz)
 
-    print('\n' + BLUE + 'Solar Info')
-    print('Dawn:    %s' % sun_times['dawn'].strftime("%Hu%M"))
-    print('Sunrise: %s' % sun_times['sunrise'].strftime("%Hu%M"))
-    print('Noon:    %s' % sun_times['noon'].strftime("%Hu%M"))
-    print('Sunset:  %s' % sun_times['sunset'].strftime("%Hu%M"))
-    print('Dusk:    %s' % sun_times['dusk'].strftime("%Hu%M"))
+print('\n' + BLUE + 'Solar Info')
+print('Dawn:    %s' % sun_times['dawn'].strftime("%Hu%M"))
+print('Sunrise: %s' % sun_times['sunrise'].strftime("%Hu%M"))
+print('Noon:    %s' % sun_times['noon'].strftime("%Hu%M"))
+print('Sunset:  %s' % sun_times['sunset'].strftime("%Hu%M"))
+print('Dusk:    %s' % sun_times['dusk'].strftime("%Hu%M"))
 
 ##################################### Plot #####################################
 
 plot = SolarPlot()
-plot.plot(time, data['LocalForecast'], list(actual_power.keys()), list(actual_power.values()), local_tz,
-          current_predicted_power, sun_times, local_capacity, total_kwh, current_kwh,
-          current_power/1000, current_production/1000, last_update)
+if today:
+    plot.plot(time, data['LocalForecast'], list(actual_power.keys()), list(actual_power.values()), local_tz, sun_times,
+              local_capacity, total_predicted_kwh, current_predicted_power, current_predicted_kwh,
+              current_power/1000, current_production/1000, last_update)
+else:
+    plot.plot(time, data['LocalForecast'], list(actual_power.keys()), list(actual_power.values()), local_tz, sun_times,
+              local_capacity, total_predicted_kwh)

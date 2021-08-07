@@ -17,26 +17,28 @@ class SolarPlot:
         self.verbose = verbose
 
 
-    def plot(self, time_forecast, forecast, time_actual, actual, tz,
-             current_predicted_power, sun_times, local_capacity, total_predicted_kwh, current_predicted_kwh,
-             current_actual_power, current_actual_kwh, actual_last_updated):
+    def plot(self, time_forecast, forecast, time_actual, actual, tz, sun_times,
+             local_capacity, total_predicted_kwh, current_predicted_power=None, current_predicted_kwh=None,
+             current_actual_power=None, current_actual_kwh=None, actual_last_updated=None):
         '''
         Arguments
         ---------
         time        (list)  : time as list of timedata (timezone aware)
         forecast    (list)  :
+        time
         actual      (list)  :
         tz
-
-        current_predicted_power
         sun_times
+
         local_capacity
         total_predicted_kwh
-        current_predicted_kwh
 
-        current_actual_power
-        current_actual_kwh
-        actual_last_updated
+        current_predicted_power (float)     : (optional)
+        current_predicted_kwh   (float)     : (optional)
+
+        current_actual_power    (float)     : (optional)
+        current_actual_kwh      (float)     : (optional)
+        actual_last_updated     (datetime)  : (optional)
         '''
         # Progress print
         if self.verbose:
@@ -75,34 +77,37 @@ class SolarPlot:
         plt.gca().xaxis.set_minor_formatter(mdates.DateFormatter('%Hu', tz=tz))
 
         # Current time
-        datetime_now = datetime.datetime.now(tz=tz)
-        plt.axvline(x=datetime_now, color='r', linestyle='dashed', linewidth=1, alpha=0.7)
+        if current_predicted_power != None:
+            datetime_now = datetime.datetime.now(tz=tz)
+            plt.axvline(x=datetime_now, color='r', linestyle='dashed', linewidth=1, alpha=0.7)
 
-        label = datetime_now.strftime('%Hu%M')
-        trans = plt.gca().get_xaxis_transform()
-        plt.text(datetime_now, 1.01, label, transform=trans,
-                 horizontalalignment = 'center',
-                 verticalalignment = 'bottom',
-                 color='r')
+            label = datetime_now.strftime('%Hu%M')
+            trans = plt.gca().get_xaxis_transform()
+            plt.text(datetime_now, 1.01, label, transform=trans,
+                     horizontalalignment = 'center',
+                     verticalalignment = 'bottom',
+                     color='r')
 
         # Current predicted power
-        plt.axhline(y=current_predicted_power, color=forecast_color, linestyle='dashed', linewidth=1, alpha=0.7)
-        plt.plot(datetime_now, current_predicted_power, 'o', color=forecast_color)
+        if current_predicted_power != None:
+            plt.axhline(y=current_predicted_power, color=forecast_color, linestyle='dashed', linewidth=1, alpha=0.7)
+            plt.plot(datetime_now, current_predicted_power, 'o', color=forecast_color)
 
-        trans = plt.gca().get_yaxis_transform()
-        plt.text(1.01, current_predicted_power, '%.2f kW' % current_predicted_power, transform=trans,
-                 horizontalalignment = 'left',
-                 verticalalignment = 'center',
-                 color=forecast_color)
+            trans = plt.gca().get_yaxis_transform()
+            plt.text(1.01, current_predicted_power, '%.2f kW' % current_predicted_power, transform=trans,
+                     horizontalalignment = 'left',
+                     verticalalignment = 'center',
+                     color=forecast_color)
 
         # Current actual power
-        plt.axhline(y=current_actual_power, color=actual_color, linestyle='dashed', linewidth=1, alpha=0.7)
-        plt.plot(actual_last_updated, current_actual_power, 'o', color=actual_color)
+        if current_actual_power != None:
+            plt.axhline(y=current_actual_power, color=actual_color, linestyle='dashed', linewidth=1, alpha=0.7)
+            plt.plot(actual_last_updated, current_actual_power, 'o', color=actual_color)
 
-        plt.text(1.01, current_actual_power, '%.2f kW' % current_actual_power, transform=trans,
-                 horizontalalignment = 'left',
-                 verticalalignment = 'center',
-                 color=actual_color)
+            plt.text(1.01, current_actual_power, '%.2f kW' % current_actual_power, transform=trans,
+                     horizontalalignment = 'left',
+                     verticalalignment = 'center',
+                     color=actual_color)
 
         #--------------------------------- Sun times ----------------------------------#
 
@@ -113,12 +118,17 @@ class SolarPlot:
 
         actual = [x for x in actual if x is not None]
 
-        actual_data_range = max(actual) - min(actual)
-        actual_ymin = min(actual) - 0.05*actual_data_range # default bottom margin
-        actual_ymax = max(actual) + 0.10*actual_data_range # more top margin
+        # Actual data might be empty (future plot)
+        if len(actual) >= 1:
+            actual_data_range = max(actual) - min(actual)
+            actual_ymin = min(actual) - 0.05*actual_data_range # default bottom margin
+            actual_ymax = max(actual) + 0.10*actual_data_range # more top margin
 
-        ymin = min(forecast_ymin, actual_ymin)
-        ymax = max(forecast_ymax, actual_ymax)
+            ymin = min(forecast_ymin, actual_ymin)
+            ymax = max(forecast_ymax, actual_ymax)
+        else:
+            ymin = forecast_ymin
+            ymax = forecast_ymax
 
         plt.ylim(ymin,ymax)
 
@@ -142,14 +152,22 @@ class SolarPlot:
         rows.append(['Local Capacity', '%.2f' % local_capacity, 'kWp'])
         rows.append(['','',''])
         rows.append([r'$\bf{Elia\ Predictions}$','',''])
+        elia_row = len(rows)-1
         rows.append(['Total daily production', '%.2f' % total_predicted_kwh, 'kWh'])
-        rows.append(['Current power', '%.2f' % current_predicted_power, 'kW'])
-        rows.append(['Current production', '%.2f' % current_predicted_kwh, 'kWh'])
+        if current_predicted_power != None:
+            rows.append(['Current power', '%.2f' % current_predicted_power, 'kW'])
+        if current_predicted_kwh != None:
+            rows.append(['Current production', '%.2f' % current_predicted_kwh, 'kWh'])
         rows.append(['','',''])
         rows.append([r'$\bf{SolarEdge\ Actuals}$','',''])
-        rows.append(['Current power', '%.2f' % current_actual_power, 'kW'])
-        rows.append(['Current production', '%.2f' % current_actual_kwh, 'kWh'])
-        rows.append(['Last updated', actual_last_updated.strftime("%Hu%M"), ''])
+        solaredge_row = len(rows)-1
+        if current_actual_power != None:
+            rows.append(['Current power', '%.2f' % current_actual_power, 'kW'])
+        if current_actual_kwh != None:
+            rows.append(['Current production', '%.2f' % current_actual_kwh, 'kWh'])
+        if actual_last_updated != None:
+            rows.append(['Last updated', actual_last_updated.strftime("%Hu%M"), ''])
+            last_update_row = len(rows)-1
 
         nr_of_rows = len(rows)
 
@@ -164,11 +182,14 @@ class SolarPlot:
         #t.set_fontsize(8)
         t.auto_set_column_width((0,1,3))
 
-        # Color cells
-        t[2, 0].set_text_props(color=forecast_color)
-        t[7, 0].set_text_props(color=actual_color)
-        t[10, 0].set_text_props(color='grey')
-        t[10, 1].set_text_props(color='grey')
+        # Format cells
+        t[elia_row, 0].set_text_props(color=forecast_color)
+        t[solaredge_row, 0].set_text_props(color=actual_color)
+        if actual_last_updated != None:
+            t[last_update_row, 0].set_text_props(color='grey')
+            t[last_update_row, 1].set_text_props(color='grey')
+            t[last_update_row, 0].set_fontsize(9)
+            t[last_update_row, 1].set_fontsize(9)
 
         # Right align numbers
         for i in range(nr_of_rows):

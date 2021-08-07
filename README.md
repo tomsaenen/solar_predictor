@@ -18,6 +18,11 @@ Just a small DIY project
 git clone https://github.com/tomsaenen/solar_predictor.git
 ```
 
+#### Dependencies
+```bash
+pip install colorama requests xmltodict pytz pandas scipy matplotlib astral
+```
+
 #### SolarEdge API
 To access the SolarEdge API an API key is required. This key is read from `solaredge_api.json`:
 ```json
@@ -30,19 +35,22 @@ This file is not included in the repository for privacy reasons.
 ## Run
 Run for today:
 ```bash
-python3 main.py
+py main.py
 ```
 
 Run for any day:
 ```bash
-python3 main.py YYYY-MM-DD
+py main.py YYYY-MM-DD
 ```
 
 You can test communication with 3rd parties separately:
 ```bash
-python3 elia.py
-python3 solaredge.py
+py elia.py
+py solaredge.py
 ```
 
 ## TODO
+- forecast and actuals as dict to plot
+- Properly detect history/today/future
+- only add last value if newer than history
 - Communicate predictions to PLC via OPC
