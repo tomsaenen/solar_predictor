@@ -27,7 +27,7 @@ pip install colorama requests xmltodict pytz pandas scipy matplotlib astral
 To access the SolarEdge API an API key is required. This key is read from `solaredge_api.json`:
 ```json
 {
-  "api_key": "KEY",
+  "api_key": "KEY"
 }
 ```
 This file is not included in the repository for privacy reasons.
