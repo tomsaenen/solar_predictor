@@ -2,13 +2,14 @@
 
 import json
 import datetime
+from collections import defaultdict
 
 import requests
 import urllib3
 urllib3.disable_warnings() # Ignore InsecureRequestWarning
 import pytz
 
-from color import RED, GREEN, YELLOW, BLUE
+from color import BLUE, RED, GREEN, YELLOW, YELLOW_BRIGHT
 
 
 class SolarEdgeConnector:
@@ -381,7 +382,7 @@ class SolarEdgeConnector:
             print(GREEN + 'Done')
 
 
-    def get_storage_information(self, site_id):
+    def get_storage_information(self, site_id, start_time, end_time):
         '''
         Storage Information
 
@@ -392,7 +393,27 @@ class SolarEdgeConnector:
 
         Argument
         --------
-        site_id (int)
+        site_id     (int)
+        start_time  (string)    :   YYYY-MM-DD hh:mm:ss
+        end_time    (string)    :   YYYY-MM-DD hh:mm:ss
+
+        Returns
+        -------
+        battery_data (list of dicts)    :  one dict per battery, for which each key returns a list:
+            {
+             'time'             : timestamps (datetime)
+             'batteryState'     : 0=Invalid, 1=Standby, 2=ThermalMgmt, 3=Enabled, 4=Fault
+             'stateOfCharge'    : % charged (of available capacity)
+
+             'power'            : positive power = charging, negative = discharging
+             'ACGridCharging'   : charging energy from grid (Wh)
+
+             'internalTemp'     : Battery internal temperature (Celsius)
+
+             'lifeTimeEnergyCharged'    : Energy charged during lifetime (Wh)
+             'lifeTimeEnergyDischarged' : Energy discharged during lifetime (Wh)
+             'fullPackEnergyAvailable'  : Maximum energy that can be stored (Wh)
+            }
         '''
         # Progress print
         if self.verbose:
@@ -401,8 +422,8 @@ class SolarEdgeConnector:
         # Build request
         method = '/site/%s/storageData' % self.sites[site_id]['id'] # /site/SITE_ID/storageData
         parameter = []
-        parameter.append('startTime=2021-08-04%2000:00:00') # mandatory
-        parameter.append('endTime=2021-08-04%2003:59:59') # mandatory
+        parameter.append('startTime=%s' % start_time.replace(' ','%20')) # mandatory
+        parameter.append('endTime=%s' % end_time.replace(' ','%20')) # mandatory
         parameter.append('api_key=' + self.credentials['api_key'])
 
         # Do request
@@ -411,6 +432,26 @@ class SolarEdgeConnector:
         # Extract data
         nr_of_batteries = json_data['storageData']['batteryCount']
         batteries = json_data['storageData']['batteries']
+
+        battery_data = []
+        for battery in batteries:
+            battery_data.append(defaultdict(list))
+            for entry in battery['telemetries']:
+                for key in entry:
+                    if key == 'timeStamp':
+                        unaware_dt = datetime.datetime.strptime(entry[key], '%Y-%m-%d %H:%M:%S')
+                        dt = pytz.timezone('Europe/Brussels').localize(unaware_dt) # timezone aware datetime
+                        battery_data[-1]['time'].append(dt)
+                    else:
+                        battery_data[-1][key].append(entry[key])
+
+        # DEBUG
+        if self.debug:
+            for battery in battery_data:
+                for key in battery:
+                    print(YELLOW + key)
+                    for entry in battery[key]:
+                        print(YELLOW_BRIGHT + str(entry))
 
         # Print info
         if self.info:
@@ -426,12 +467,77 @@ class SolarEdgeConnector:
         if self.verbose:
             print(GREEN + 'Done')
 
+        # Return data
+        return battery_data
+
+    ############################ Site Equipment API ############################
+
+    def get_inventory(self, site_id):
+        '''
+        Inventory
+
+        Inventory of SolarEdge equipment in the site:
+        - inverters (SMI's)
+        - batteries
+        - meters
+        - gateways
+        - sensors
+
+        Argument
+        --------
+        site_id (int)
+        '''
+        # Progress print
+        if self.verbose:
+            print('Getting site inventory... ', end='')
+
+        # Build request
+        method = '/site/%s/inventory' % self.sites[site_id]['id'] # /site/SITE_ID/inventory
+        parameter = []
+        parameter.append('api_key=' + self.credentials['api_key'])
+
+        # Do request
+        json_data = self._get_request(self.root, method, parameter, debug=False)
+
+        # Extract data
+        inventory = json_data['Inventory']
+
+        # Print info
+        if self.info:
+            print('\n' + BLUE + 'Site Inventory')
+
+            print('Inverters: %d' % len(inventory['inverters']))
+            if len(inventory['inverters']) > 0:
+                for item in inventory['inverters']:
+                    print('  ' + '%s' % item['SN'], end=' ')
+                    print('(Connected optimizers: %d)' % item['connectedOptimizers'])
+
+            print('Batteries: %d' % len(inventory['batteries']))
+            if len(inventory['batteries']) > 0:
+                for item in inventory['batteries']:
+                    print('  ' + '%s' % item['model'])
+
+            print('Meters: %d' % len(inventory['meters']))
+            if len(inventory['meters']) > 0:
+                for item in inventory['meters']:
+                    print('  ' + '%s (%s)' % (item['name'], item['form']))
+
+            print('Sensors: %d' % len(inventory['sensors']))
+            print('Gateways: %d' % len(inventory['gateways']))
+
+        # Progress print
+        if self.verbose:
+            print(GREEN + 'Done')
+
 
 if __name__ == '__main__':
     sec = SolarEdgeConnector(verbose=False, info=True)
+    # Sites API
     sec.get_sites_list()
     sec.get_site_energy(0, '2021-08-07', '2021-08-07')
     sec.get_site_power(0, '2021-08-04 00:00:00', '2021-08-04 23:59:59')
     sec.get_site_overview(0)
     sec.get_site_power_flow(0)
-    sec.get_storage_information(0)
+    sec.get_storage_information(0, '2021-08-04 00:00:00', '2021-08-04 03:59:59')
+    # Site Equipment API
+    sec.get_inventory(0)

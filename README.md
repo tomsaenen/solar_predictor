@@ -51,6 +51,5 @@ py solar.py
 ```
 
 ## TODO
-- Display actual total kWh for past days
 - Plot today's values when running connectors standalone
 - Communicate predictions to PLC via OPC
