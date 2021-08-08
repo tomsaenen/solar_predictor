@@ -21,7 +21,7 @@ class SolarPlot:
     def plot(self, time_view, tz, sun_times, local_capacity,
              forecast, predicted_total_kwh,
              predicted_current_power=None, predicted_current_kwh=None,
-             actual=None, actual_current_power=None, actual_current_kwh=None, actual_last_updated=None):
+             actual=None, actual_current_power=None, actual_current_kwh=None, actual_last_updated=None, actual_total_kwh=None):
         '''
         Arguments
         ---------
@@ -40,6 +40,8 @@ class SolarPlot:
         actual_current_power    (float)     : (optional) [kW]
         actual_current_kwh      (float)     : (optional) [kWh]
         actual_last_updated     (datetime)  : (optional)
+
+        actual_total_kwh
         '''
         # Progress print
         if self.verbose:
@@ -176,7 +178,7 @@ class SolarPlot:
         # Predictions
         rows.append([r'$\bf{Elia\ Predictions}$','',''])
         elia_row = len(rows)-1
-        rows.append(['Total daily production', '%.2f' % predicted_total_kwh, 'kWh'])
+        rows.append(['Total production', '%.2f' % predicted_total_kwh, 'kWh'])
         if predicted_current_power != None:
             rows.append(['Current power', '%.2f' % predicted_current_power, 'kW'])
         if predicted_current_kwh != None:
@@ -187,6 +189,8 @@ class SolarPlot:
         if time_view in ('past', 'today'):
             rows.append([r'$\bf{SolarEdge\ Actuals}$','',''])
             solaredge_row = len(rows)-1
+
+        if time_view == 'today':
             if actual_current_power != None:
                 rows.append(['Current power', '%.2f' % actual_current_power, 'kW'])
             if actual_current_kwh != None:
@@ -194,6 +198,9 @@ class SolarPlot:
             if actual_last_updated != None:
                 rows.append(['Last updated', actual_last_updated.strftime("%Hu%M"), ''])
                 last_update_row = len(rows)-1
+
+        if time_view == 'past':
+            rows.append(['Total production', '%.2f' % actual_total_kwh, 'kWh'])
 
         nr_of_rows = len(rows)
 

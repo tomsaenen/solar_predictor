@@ -145,6 +145,13 @@ if time_view == 'today':
     # Get current values
     last_update, current_power, current_production = sec.get_site_overview(0)
 
+if time_view == 'past':
+    # Date arguments for SolarEdge API
+    day = date.strftime('%Y-%m-%d')
+
+    # Get total production
+    energy = sec.get_site_energy(0, day, day)
+
 ################################### Sun Info ###################################
 
 st = SolarTimes()
@@ -169,4 +176,4 @@ elif time_view == 'future':
 elif time_view == 'past':
     plot.plot(time_view, local_tz, sun_times, local_capacity,
               forecast, predicted_total_kwh,
-              actual=actual)
+              actual=actual, actual_total_kwh=energy['value'][0])

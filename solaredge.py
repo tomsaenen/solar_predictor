@@ -157,7 +157,7 @@ class SolarEdgeConnector:
             print(GREEN + 'Done')
 
 
-    def get_site_energy(self, site_id):
+    def get_site_energy(self, site_id, start_date, end_date):
         '''
         Site Energy
 
@@ -168,6 +168,13 @@ class SolarEdgeConnector:
         Argument
         --------
         site_id (int)
+        start_date  (string)    :   YYYY-MM-DD
+        end_date    (string)    :   YYYY-MM-DD
+
+        Returns
+        -------
+        energy   (dict)  :   {'time'  : list of time (datetime),
+                              'value' : list of energy (float) [kWh]}
         '''
         # Progress print
         if self.verbose:
@@ -176,8 +183,8 @@ class SolarEdgeConnector:
         # Build request
         method = '/site/%s/energy' % self.sites[site_id]['id'] # /site/SITE_ID/energy
         parameter = []
-        parameter.append('startDate=2021-08-04') # mandatory
-        parameter.append('endDate=2021-08-04') # mandatory
+        parameter.append('startDate=%s' % start_date) # mandatory
+        parameter.append('endDate=%s' % end_date) # mandatory
         #parameter.append('timeUnit=HOUR') # QUARTER_OF_AN_HOUR, HOUR, DAY (default), WEEK, MONTH, YEAR
         parameter.append('api_key=' + self.credentials['api_key'])
 
@@ -185,15 +192,27 @@ class SolarEdgeConnector:
         json_data = self._get_request(self.root, method, parameter, debug=False)
 
         # Extract data
-        current_production = json_data['energy']['values'][0]['value'] # Wh
+        energy = {}
+        energy['time'] = []
+        energy['value'] = []
+        for entry in json_data['energy']['values']:
+            unaware_dt = datetime.datetime.strptime(entry['date'], '%Y-%m-%d %H:%M:%S')
+            dt = pytz.timezone('Europe/Brussels').localize(unaware_dt) # timezone aware datetime
+            energy['time'].append(dt)
+            energy['value'].append(entry['value'] / 1000) # Wh to kWh
 
         # Print info
         if self.info:
-             print('\n' + 'Current power: %.2f kWh' % (current_production/1000))
+            print('\n' + BLUE + 'Site Energy')
+            for i, _ in enumerate(energy['time']):
+                print(str(energy['time'][i]) + ': ' + str(energy['value'][i]))
 
         # Progress print
         if self.verbose:
             print(GREEN + 'Done')
+
+        # Return data
+        return energy
 
 
     def get_site_power(self, site_id, start_time, end_time):
@@ -214,7 +233,8 @@ class SolarEdgeConnector:
 
         Returns
         -------
-        power   (dict)  :   {datetime : power (float) [kW]}
+        power   (dict)  :   {'time'  : list of time (datetime),
+                             'value' : list of power (float) [kW]}
         '''
         # Progress print
         if self.verbose:
@@ -239,12 +259,12 @@ class SolarEdgeConnector:
             dt = pytz.timezone('Europe/Brussels').localize(unaware_dt) # timezone aware datetime
             if entry['value'] != None:
                 power['time'].append(dt)
-                power['value'].append(entry['value'] / 1000) # kW
+                power['value'].append(entry['value'] / 1000) # W to kW
 
         # Print info
         if self.info:
             print('\n' + BLUE + 'Site Power Measurements')
-            for i, time in enumerate(power['time']):
+            for i, _ in enumerate(power['time']):
                 print(str(power['time'][i]) + ': ' + str(power['value'][i]))
 
         # Progress print
@@ -410,6 +430,7 @@ class SolarEdgeConnector:
 if __name__ == '__main__':
     sec = SolarEdgeConnector(verbose=False, info=True)
     sec.get_sites_list()
+    sec.get_site_energy(0, '2021-08-07', '2021-08-07')
     sec.get_site_power(0, '2021-08-04 00:00:00', '2021-08-04 23:59:59')
     sec.get_site_overview(0)
     sec.get_site_power_flow(0)
