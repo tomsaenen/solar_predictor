@@ -232,17 +232,20 @@ class SolarEdgeConnector:
 
         # Extract data
         power = {}
+        power['time'] = []
+        power['value'] = []
         for entry in json_data['power']['values']:
             unaware_dt = datetime.datetime.strptime(entry['date'], '%Y-%m-%d %H:%M:%S')
             dt = pytz.timezone('Europe/Brussels').localize(unaware_dt) # timezone aware datetime
             if entry['value'] != None:
-                power[dt] = entry['value'] / 1000 # kW
+                power['time'].append(dt)
+                power['value'].append(entry['value'] / 1000) # kW
 
         # Print info
         if self.info:
             print('\n' + BLUE + 'Site Power Measurements')
-            for key in power:
-                print(str(key) + ': ' + str(power[key]))
+            for i, time in enumerate(power['time']):
+                print(str(power['time'][i]) + ': ' + str(power['value'][i]))
 
         # Progress print
         if self.verbose:

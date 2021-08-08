@@ -47,10 +47,12 @@ You can test communication with 3rd parties separately:
 ```bash
 py elia.py
 py solaredge.py
+py solar.py
 ```
 
 ## TODO
 - forecast and actuals as dict to plot
 - Properly detect history/today/future
 - only add last value if newer than history
+- plot today's values when running connectors standalone
 - Communicate predictions to PLC via OPC

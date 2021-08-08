@@ -38,8 +38,7 @@ class EliaConnector:
 
         Returns
         -------
-        time    (list)      : time as list of timedata (timezone aware)
-        data    (dict)
+        data    (defaultdict)   : {datetime (timezone aware) : value}
         '''
         # Progress print
         if self.verbose:
@@ -71,15 +70,15 @@ class EliaConnector:
             local_tz = pytz.timezone(tz) # target timezone
             time_datetime_bru = time_datetime_utc.astimezone(local_tz) # convert to timezone
 
-            time.append(time_datetime_bru)
-
+            data['time'].append(time_datetime_bru)
             data['MostRecentForecast'].append(float(entry['MostRecentForecast']))
             #data['RealTime'].append(float(entry['RealTime']))
             data['MonitoredCapacity'].append(float(entry['MonitoredCapacity']))
 
         # Print info
         if self.info:
-            df = pd.DataFrame(data, index=time)
+            df = pd.DataFrame(data)
+            df.set_index('time', inplace=True)
             print('\n' + BLUE + 'Elia Data')
             print(df.to_string())
 
@@ -88,9 +87,9 @@ class EliaConnector:
             print(GREEN + 'Done')
 
         # Return results
-        return time, data
+        return data
 
 
 if __name__ == '__main__':
-    ec = EliaConnector(info=True)
+    ec = EliaConnector(verbose=False, info=True)
     ec.get_chart_data('2021-08-03', '2021-08-04', region=5, tz='Europe/Brussels')
