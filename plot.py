@@ -8,6 +8,22 @@ import matplotlib.dates as mdates
 from color import GREEN, YELLOW, YELLOW_BRIGHT
 
 
+def _get_text_bbox(text):
+    '''
+    Argument
+    --------
+    text    (matplotlib.Text)
+
+    Returns
+    -------
+    bbox    (matplotlib.BBox)
+    '''
+    bbox = text.get_window_extent(renderer=plt.gcf().canvas.get_renderer()) \
+               .inverse_transformed(plt.gca().transAxes) # in axes coordinates
+
+    return bbox
+
+
 class SolarPlot:
     '''
     Plot solar predictions and actual
@@ -18,10 +34,14 @@ class SolarPlot:
         self.debug = debug
 
 
-    def plot(self, time_view, tz, sun_times, local_capacity,
-             forecast, predicted_total_kwh,
-             predicted_current_power=None, predicted_current_kwh=None,
-             actual=None, actual_current_power=None, actual_current_kwh=None, actual_last_updated=None, actual_total_kwh=None):
+    def show_all(self):
+        plt.show()
+
+
+    def solar_power(self, time_view, tz, sun_times, local_capacity,
+                    forecast, predicted_total_kwh,
+                    predicted_current_power=None, predicted_current_kwh=None,
+                    actual=None, actual_current_power=None, actual_current_kwh=None, actual_last_updated=None, actual_total_kwh=None):
         '''
         Arguments
         ---------
@@ -45,10 +65,10 @@ class SolarPlot:
         '''
         # Progress print
         if self.verbose:
-            print('Plotting... ', end='')
+            print('Plotting solar power... ', end='')
             if self.debug: print()
 
-        # Add last value (only if it is later)
+        # Add last value (only if it is later, otherwise line seems to go back)
         if time_view == 'today':
             if actual_last_updated > actual['time'][-1]:
                 actual['time'].append(actual_last_updated)
@@ -56,6 +76,7 @@ class SolarPlot:
 
         #plt.style.use('dark_background')
 
+        # Create figure
         cm = 1/2.54 # inch
         plt.figure(figsize=(35*cm,18*cm))
 
@@ -235,4 +256,93 @@ class SolarPlot:
             print(GREEN + 'Done')
 
         #plt.savefig('plot.png')
-        plt.show()
+        #plt.show()
+
+
+    def power_flow(self, component_power, component_status, connections):
+        '''
+        Plot power flow between site components (solar, battery, house, grid)
+
+        Arguments
+        ---------
+        component_power     (dict) : {name (string) : power (float) [kW]}
+        component_status    (dict) : {name (string) : status (string)}
+        connections         (list)
+        '''
+        # Progress print
+        if self.verbose:
+            print('Plotting power flow... ', end='')
+            if self.debug: print()
+
+        # Import fontawesome keys
+        import fontawesome as fa
+
+        # Load fontawesome font
+        from matplotlib.font_manager import FontProperties
+        fp = FontProperties(fname=r'./font/Font Awesome 5 Free-Solid-900.otf')
+
+        # Create figure
+        cm = 1/2.54 # inch
+        plt.figure(figsize=(15*cm,10*cm))
+
+        # Plot icons
+        icon_properties = {'fontproperties': fp,
+                           'ha': 'center',
+                           'va': 'center',
+                           "transform": plt.gca().transAxes}
+
+        solar = plt.text(.20, .50, fa.icons['solar-panel'], fontsize=25, **icon_properties)
+        home = plt.text(.50, .50, fa.icons['home'], fontsize=35, **icon_properties)
+        grid = plt.text(.80, .50, fa.icons['plug'], fontsize=25, **icon_properties)
+
+        battery = plt.text(.50, .20, fa.icons['car-battery'], fontsize=25, **icon_properties)
+
+        # Icon BBoxes
+        solar_bbox = _get_text_bbox(solar)
+        home_bbox = _get_text_bbox(home)
+        grid_bbox = _get_text_bbox(grid)
+        battery_bbox = _get_text_bbox(battery)
+
+        # Arrows
+        margin = 0.05
+
+        solar_home = plt.arrow(x = solar_bbox.x1 + margin,
+                               y = solar.get_position()[1],
+                               dx = home_bbox.x0 - solar_bbox.x1 - 2*margin,
+                               dy = 0,
+                               width = 0.001,
+                               head_width = 0.02,
+                               length_includes_head = True,
+                               fc = 'k',
+                               transform=plt.gca().transAxes)
+
+        home_grid = plt.arrow(x = home_bbox.x1 + margin,
+                              y = home.get_position()[1],
+                              dx = grid_bbox.x0 - home_bbox.x1 - 2*margin,
+                              dy = 0,
+                              width = 0.001,
+                              head_width = 0.02,
+                              length_includes_head = True,
+                              fc = 'k',
+                              transform=plt.gca().transAxes)
+
+        home_battery = plt.arrow(x = home.get_position()[0],
+                                 y = home_bbox.y0 - margin,
+                                 dx = 0,
+                                 dy = battery_bbox.y1 - home_bbox.y0 + 2*margin,
+                                 width = 0.001,
+                                 head_width = 0.02,
+                                 length_includes_head = True,
+                                 fc = 'k',
+                                 transform=plt.gca().transAxes)
+
+
+        # Plot settings
+        plt.axis('off')
+
+        # Progress print
+        if self.verbose:
+            print(GREEN + 'Done')
+
+        #plt.savefig('plot.png')
+        #plt.show()

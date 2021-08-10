@@ -166,8 +166,8 @@ class SolarEdgeConnector:
         > can be used to get production for multiple days at a time
         > can also be used to get current production for today, but this makes more sense through 'Site Overview'
 
-        Argument
-        --------
+        Arguments
+        ---------
         site_id (int)
         start_date  (string)    :   YYYY-MM-DD
         end_date    (string)    :   YYYY-MM-DD
@@ -335,6 +335,12 @@ class SolarEdgeConnector:
         Argument
         --------
         site_id (int)
+
+        Returns
+        -------
+        component_power     (dict) : {name (string) : power (float) [kW]}
+        component_status    (dict) : {name (string) : status (string)}
+        connections         (list)
         '''
         # Progress print
         if self.verbose:
@@ -380,6 +386,9 @@ class SolarEdgeConnector:
         # Progress print
         if self.verbose:
             print(GREEN + 'Done')
+
+        # Return data
+        return component_power, component_status, connections
 
 
     def get_storage_information(self, site_id, start_time, end_time):

@@ -161,19 +161,34 @@ sun_times = st.get_times(tz=local_timezone, lat=51.197567558420694, lon=4.716483
 
 plot = SolarPlot()
 
+#-------------------------------- Solar Power ---------------------------------#
+
 forecast = {}
 forecast['time'] = data['time']
 forecast['value'] = data['LocalForecast']
 
 if time_view == 'today':
-    plot.plot(time_view, local_tz, sun_times, local_capacity,
-              forecast, predicted_total_kwh,
-              predicted_current_power, predicted_current_kwh,
-              actual, current_power/1000, current_production/1000, last_update)
+    plot.solar_power(time_view, local_tz, sun_times, local_capacity,
+                     forecast, predicted_total_kwh,
+                     predicted_current_power, predicted_current_kwh,
+                     actual, current_power/1000, current_production/1000, last_update)
 elif time_view == 'future':
-    plot.plot(time_view, local_tz, sun_times, local_capacity,
-              forecast, predicted_total_kwh)
+    plot.solar_power(time_view, local_tz, sun_times, local_capacity,
+                     forecast, predicted_total_kwh)
 elif time_view == 'past':
-    plot.plot(time_view, local_tz, sun_times, local_capacity,
-              forecast, predicted_total_kwh,
-              actual=actual, actual_total_kwh=energy['value'][0])
+    plot.solar_power(time_view, local_tz, sun_times, local_capacity,
+                     forecast, predicted_total_kwh,
+                     actual=actual, actual_total_kwh=energy['value'][0])
+
+#--------------------------------- Power Flow ---------------------------------#
+
+# if time_view == 'today':
+#     # Get data
+#     component_power, component_status, connections = sec.get_site_power_flow(0)
+#
+#     # Plot
+#     plot.power_flow(component_power, component_status, connections)
+
+#------------------------------------------------------------------------------#
+
+plot.show_all()
