@@ -20,7 +20,7 @@ git clone https://github.com/tomsaenen/solar_predictor.git
 
 #### Dependencies
 ```bash
-pip install colorama requests xmltodict pytz pandas scipy matplotlib astral
+pip install colorama requests xmltodict pytz pandas scipy matplotlib astral python-snap7
 ```
 
 #### SolarEdge API
