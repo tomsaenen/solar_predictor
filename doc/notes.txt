@@ -1,0 +1,29 @@
+https://github.com/jbuehl/solaredge
+
+
+
+https://www.bdb.be/nl/weerbericht
+
+https://opendata.stackexchange.com/questions/1064/api-for-sun-radiation-illuminance-data
+
+
+https://opendata.elia.be/
+
+v1
+--
+https://opendata.elia.be/api/v1/console/datasets/1.0/search/
+doc:
+https://help.opendatasoft.com/apis/ods-search-v1/#search-api-v1
+
+v2
+--
+
+- geen solar?
+	> zie test_elia_v2.py
+
+
+
+-----
+
+
+https://www.energiesparen.be/stroomvoorspeller

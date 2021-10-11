@@ -338,9 +338,10 @@ class SolarEdgeConnector:
 
         Returns
         -------
-        component_power     (dict) : {name (string) : power (float) [kW]}
-        component_status    (dict) : {name (string) : status (string)}
-        connections         (list)
+        component_power     (dict)  : {name (string) : power (float) [kW]}
+        component_status    (dict)  : {name (string) : status (string)}
+        connections         (list)  :
+        battery_level       (float) : current battery level [%]
         '''
         # Progress print
         if self.verbose:
@@ -388,7 +389,7 @@ class SolarEdgeConnector:
             print(GREEN + 'Done')
 
         # Return data
-        return component_power, component_status, connections
+        return component_power, component_status, connections, battery_level
 
 
     def get_storage_information(self, site_id, start_time, end_time):
