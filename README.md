@@ -9,9 +9,13 @@ Just a small DIY project
 - Read out actual performance (provided by SolarEdge)
 - Create nice graph
 
-![plot.png](./plot.png)
+![plot.png](./doc/plot.png)
 
 ## Install
+
+#### Prerequisites
+- Python
+- git
 
 #### Repository
 ```bash

@@ -1,5 +1,7 @@
 #! python3
 
+import json
+
 from snap7.client import Client
 import snap7.util
 
@@ -16,11 +18,17 @@ class PLCConnector:
         self.info = info
         self.debug = debug
 
+        # Import credentials
+        with open('credentials.json', 'r') as file:
+            self.credentials = json.load(file)
+
+        # PLC IP address from credentials
+        ip = self.credentials['plc']['ip']['local']
+
         # Create client
         print('Connecting to PLC... ', end='')
         self.client = Client()
-        #client.connect('192.168.0.31', 0, 2, 102) # intern
-        self.client.connect('94.226.54.149', 0, 2, 102) # extern (forwarded via router)
+        self.client.connect(ip, 0, 2, 102)
         if self.client.get_connected():
             print(GREEN + 'Connected')
 

@@ -37,8 +37,8 @@ class SolarEdgeConnector:
         self.rename_component['PV'] = 'solar'
         self.rename_component['STORAGE'] = 'battery'
 
-        # Import API key
-        with open('solaredge_api.json', 'r') as file:
+        # Import credentials
+        with open('credentials.json', 'r') as file:
             self.credentials = json.load(file)
 
 
@@ -105,7 +105,7 @@ class SolarEdgeConnector:
         # Build request
         method = '/sites/list'
         parameter = []
-        parameter.append('api_key=' + self.credentials['api_key'])
+        parameter.append('api_key=' + self.credentials['solaredge']['api_key'])
 
         # Do request
         json_data = self._get_request(self.root, method, parameter)
@@ -148,7 +148,7 @@ class SolarEdgeConnector:
         # Build request
         method = '/site/%s/details' % self.sites[site_id]['id'] # /site/SITE_ID/details
         parameter = []
-        parameter.append('api_key=' + self.credentials['api_key'])
+        parameter.append('api_key=' + self.credentials['solaredge']['api_key'])
 
         # Do request
         json_data = self._get_request(self.root, method, parameter, debug=False)
@@ -187,7 +187,7 @@ class SolarEdgeConnector:
         parameter.append('startDate=%s' % start_date) # mandatory
         parameter.append('endDate=%s' % end_date) # mandatory
         #parameter.append('timeUnit=HOUR') # QUARTER_OF_AN_HOUR, HOUR, DAY (default), WEEK, MONTH, YEAR
-        parameter.append('api_key=' + self.credentials['api_key'])
+        parameter.append('api_key=' + self.credentials['solaredge']['api_key'])
 
         # Do request
         json_data = self._get_request(self.root, method, parameter, debug=False)
@@ -246,7 +246,7 @@ class SolarEdgeConnector:
         parameter = []
         parameter.append('startTime=%s' % start_time.replace(' ','%20')) # mandatory
         parameter.append('endTime=%s' % end_time.replace(' ','%20')) # mandatory
-        parameter.append('api_key=' + self.credentials['api_key'])
+        parameter.append('api_key=' + self.credentials['solaredge']['api_key'])
 
         # Do request
         json_data = self._get_request(self.root, method, parameter, debug=False)
@@ -297,7 +297,7 @@ class SolarEdgeConnector:
         # Build request
         method = '/site/%s/overview' % self.sites[site_id]['id'] # /site/SITE_ID/overview
         parameter = []
-        parameter.append('api_key=' + self.credentials['api_key'])
+        parameter.append('api_key=' + self.credentials['solaredge']['api_key'])
 
         # Do request
         json_data = self._get_request(self.root, method, parameter, debug=False)
@@ -350,7 +350,7 @@ class SolarEdgeConnector:
         # Build request
         method = '/site/%s/currentPowerFlow' % self.sites[site_id]['id'] # /site/SITE_ID/overview
         parameter = []
-        parameter.append('api_key=' + self.credentials['api_key'])
+        parameter.append('api_key=' + self.credentials['solaredge']['api_key'])
 
         # Do request
         json_data = self._get_request(self.root, method, parameter, debug=False)
@@ -434,7 +434,7 @@ class SolarEdgeConnector:
         parameter = []
         parameter.append('startTime=%s' % start_time.replace(' ','%20')) # mandatory
         parameter.append('endTime=%s' % end_time.replace(' ','%20')) # mandatory
-        parameter.append('api_key=' + self.credentials['api_key'])
+        parameter.append('api_key=' + self.credentials['solaredge']['api_key'])
 
         # Do request
         json_data = self._get_request(self.root, method, parameter, debug=False)
@@ -504,7 +504,7 @@ class SolarEdgeConnector:
         # Build request
         method = '/site/%s/inventory' % self.sites[site_id]['id'] # /site/SITE_ID/inventory
         parameter = []
-        parameter.append('api_key=' + self.credentials['api_key'])
+        parameter.append('api_key=' + self.credentials['solaredge']['api_key'])
 
         # Do request
         json_data = self._get_request(self.root, method, parameter, debug=False)

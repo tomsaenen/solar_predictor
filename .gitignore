@@ -8,5 +8,5 @@ __pycache__/
 .DS_Store
 
 # Project related
-solaredge_api.json
+credentials.json
 *_MARKED.pdf

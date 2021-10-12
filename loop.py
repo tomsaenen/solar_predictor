@@ -36,11 +36,14 @@ plc = PLCConnector(verbose=False)
 while True:
     # Get battery level
     print_time_prefix()
-    battery_level = get_battery_level(sec)
-
-    # Write to PLC
-    print_time_prefix()
-    write_battery_level(plc, battery_level)
+    try:
+        battery_level = get_battery_level(sec)
+    except Exception as ex:
+        print(ex)
+    else:
+        # Write to PLC
+        print_time_prefix()
+        write_battery_level(plc, battery_level)
 
     # Wait for next iteration
     print('Waiting...', end='')
