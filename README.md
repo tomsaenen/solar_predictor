@@ -37,7 +37,7 @@ To access the SolarEdge API an API key is required. This key is read from `crede
         "plc" : {
                 "ip" : {
                         "local": "192.168.0.xx",
-                        "public": "xx.xx.xx.xx9"
+                        "public": "xx.xx.xx.xx"
                 }
         }
 
@@ -61,6 +61,17 @@ Test communication with 3rd parties separately:
 py elia.py
 py solaredge.py
 py solar.py
+```
+
+Run in a loop:
+```bash
+py loop.py
+```
+Every 30 seconds, this reads out the current battery level and writes it to the PLC.
+
+## Update
+```bash
+git pull
 ```
 
 ## TODO
