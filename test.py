@@ -6,7 +6,7 @@ from plot import SolarPlot
 # Get data
 sec = SolarEdgeConnector()
 sec.get_sites_list()
-component_power, component_status, connections = sec.get_site_power_flow(0)
+component_power, component_status, connections, battery_level = sec.get_site_power_flow(0)
 
 # Plot
 plot = SolarPlot()

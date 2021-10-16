@@ -400,8 +400,6 @@ class SolarEdgeConnector:
             pass
         elif grid_sign == 'neg':
             component_power['grid'] = -1 * component_power['grid']
-        else:
-            raise Exception(RED + 'No connection to grid found')
 
         if battery_sign == 'pos':
             pass
