@@ -77,4 +77,6 @@ git pull
 
 ## TODO
 - Plot today's values when running connectors standalone
-- Communicate predictions to PLC via OPC
+- Communicate predictions to PLC
+- Scheduler
+- Heartbeat for PLC communication
