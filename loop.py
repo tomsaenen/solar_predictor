@@ -14,19 +14,6 @@ def print_time_prefix():
     print('[' + now.strftime('%H:%M:%S') + ']', end=' ')
 
 
-def get_battery_level(sec):
-    print('Getting battery level... ', end='')
-    _, _, _, battery_level = sec.get_site_power_flow(0)
-    print('%i%%' % battery_level)
-    return battery_level
-
-
-def write_battery_level(plc, battery_level):
-    print('Writing to PLC... ', end='')
-    plc.write_int_to_db(db=99, offset=404, value=battery_level)
-    print(GREEN + 'Done')
-
-
 # Create connectors
 sec = SolarEdgeConnector(verbose=False)
 try:
@@ -40,17 +27,25 @@ plc = PLCConnector(verbose=False)
 # Infinite loop, stopped by KeyBoardInterrupt
 try:
     while True:
-        # Get battery level
-        print_time_prefix()
         try:
-            battery_level = get_battery_level(sec)
+            # Get power flow data
+            print_time_prefix()
+            print('Getting power flow data... ', end='')
+            component_power, component_status, connections, battery_level = sec.get_site_power_flow(0)
+            print(GREEN + 'Done')
         except Exception as ex:
             print(ex)
         else:
-            # Write to PLC
-            print_time_prefix()
             try:
-                write_battery_level(plc, battery_level)
+                # Write data to PLC
+                print_time_prefix()
+                print('Writing data to PLC... ', end='')
+                plc.write_int_to_db(db=99, offset=404, value=battery_level)
+                plc.write_real_to_db(db=99, offset=420, value=component_power['grid'])
+                plc.write_real_to_db(db=99, offset=424, value=component_power['house'])
+                plc.write_real_to_db(db=99, offset=428, value=component_power['solar'])
+                plc.write_real_to_db(db=99, offset=432, value=component_power['battery'])
+                print(GREEN + 'Done')
             except Exception as ex:
                 print(ex)
 

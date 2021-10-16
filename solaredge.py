@@ -338,6 +338,10 @@ class SolarEdgeConnector:
 
         Current power flow (PV array, battery, consumption, grid)
 
+        The connection info is used to add a sign to grid and battery power
+            - positive grid power = usage, negative grid power = feeding the grid
+            - positive battery power = usage, negative battery power = feeding the battery
+
         Argument
         --------
         site_id (int)
@@ -376,6 +380,33 @@ class SolarEdgeConnector:
                 connection[key] = self.rename_component[connection[key].upper()]
 
         battery_level = json_data['siteCurrentPowerFlow']['STORAGE']['chargeLevel'] # %
+
+        # Add signs to power data (grid and battery)
+        grid_sign = None
+        for connection in connections:
+            if connection['from'] == 'house' and connection['to'] == 'grid':
+                grid_sign = 'neg'
+            if connection['from'] == 'grid' and connection['to'] == 'house':
+                grid_sign = 'pos'
+
+        battery_sign = None
+        for connection in connections:
+            if connection['from'] == 'house' and connection['to'] == 'battery':
+                battery_sign = 'neg'
+            if connection['from'] == 'battery' and connection['to'] == 'house':
+                battery_sign = 'pos'
+
+        if grid_sign == 'pos':
+            pass
+        elif grid_sign == 'neg':
+            component_power['grid'] = -1 * component_power['grid']
+        else:
+            raise Exception(RED + 'No connection to grid found')
+
+        if battery_sign == 'pos':
+            pass
+        elif battery_sign == 'neg':
+            component_power['battery'] = -1 * component_power['battery']
 
         # Print info
         if self.info:
