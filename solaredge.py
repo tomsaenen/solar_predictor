@@ -68,7 +68,10 @@ class SolarEdgeConnector:
             print(YELLOW + '[REQUEST] ' + url)
 
         # Do request
-        response = requests.get(url, verify=False)
+        try:
+            response = requests.get(url, verify=False)
+        except requests.exceptions.ConnectionError:
+            raise Exception(RED + 'Connection Error')
 
         # Check HTTP Status Code
         if response.status_code == 200:
@@ -81,13 +84,16 @@ class SolarEdgeConnector:
             return json_data
 
         elif response.status_code == 400:
-            raise Exception(RED + '401 - Bad Request')
+            raise Exception(RED + '400 - Bad Request')
 
         elif response.status_code == 401:
             raise Exception(RED + '401 - Authentication Required')
 
         elif response.status_code == 404:
             raise Exception(RED + '404 - Not Found')
+
+        elif response.status_code == 500:
+            raise Exception(RED + '500 - Internal Server Error')
 
         else:
             raise Exception(RED + 'Unprocessed HTTP Response: %d' % response.status_code)

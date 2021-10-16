@@ -49,19 +49,30 @@ class PLCConnector:
         print(GREEN + 'Done')
 
 
-    def write_db(self, db, offset, value):
+    def write_int_to_db(self, db, offset, value):
         '''
         Arguments
         ---------
-        db  (int)   :  db number
+        db      (int)   :  db number
+        offset  (int)   :  byte offset (within db)
+        value   (int)   :  value to write
         '''
+        # Progress print
         if self.verbose:
             print('Write to DB%i... ' % db)
 
+        # Prepare data
         data = bytearray(2)
         snap7.util.set_int(data, 0, value)
-        self.client.db_write(db, offset, data)
 
+        # Write data to PLC
+        try:
+            self.client.db_write(db, offset, data)
+        except snap7.exceptions.Snap7Exception as ex:
+            #print(ex)
+            raise Exception(RED + 'Write to PLC Failed')
+
+        # Progress print
         if self.verbose:
             print(GREEN + 'Done')
 

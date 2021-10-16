@@ -61,6 +61,7 @@ Test communication with 3rd parties separately:
 py elia.py
 py solaredge.py
 py solar.py
+py plc.py
 ```
 
 Run in a loop:
